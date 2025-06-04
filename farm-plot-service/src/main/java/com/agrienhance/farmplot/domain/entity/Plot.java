@@ -9,6 +9,7 @@ import org.locationtech.jts.geom.Polygon;
 
 import com.agrienhance.farmplot.domain.enums.LandTenureType;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -51,8 +52,8 @@ public class Plot {
     @ToString.Exclude
     private Polygon plotGeometry;
 
-    @Column(name = "calculated_area_hectares", precision = 10, scale = 4)
-    private Double calculatedAreaHectares;
+    @Column(name = "calculated_area_hectares", insertable = false, updatable = false, precision = 10, scale = 4)
+    private BigDecimal calculatedAreaHectares;
 
     @NotNull
     @Column(name = "tenant_id", nullable = false)
@@ -77,13 +78,13 @@ public class Plot {
     @PrePersist
     protected void onCreate() {
         updatedAt = createdAt = OffsetDateTime.now();
-        setCalculatedAreaPlaceholder();
+        // setCalculatedAreaPlaceholder();
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = OffsetDateTime.now();
-        setCalculatedAreaPlaceholder();
+        // setCalculatedAreaPlaceholder();
     }
 
     private void setCalculatedAreaPlaceholder() {

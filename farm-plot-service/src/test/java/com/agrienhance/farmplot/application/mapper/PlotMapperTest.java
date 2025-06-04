@@ -17,6 +17,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -92,13 +93,15 @@ class PlotMapperTest {
 
     @Test
     void shouldMapPlotToPlotResponse() {
+
+        BigDecimal calculatedArea = new BigDecimal(1.23);
         Plot plot = Plot.builder()
                 .plotIdentifier(UUID.randomUUID())
                 .farm(testFarm) // Associate with the testFarm
                 .plotName("Plot Bravo")
                 .cultivatorReferenceId(UUID.randomUUID())
                 .plotGeometry(createTestPolygon())
-                .calculatedAreaHectares(1.23) // Assume this was set
+                .calculatedAreaHectares(calculatedArea) // Assume this was set
                 .landTenureType(LandTenureType.LEASED)
                 .tenantId(testFarm.getTenantId())
                 .createdAt(OffsetDateTime.now())
@@ -113,7 +116,7 @@ class PlotMapperTest {
         assertThat(response.getFarmIdentifier()).isEqualTo(testFarm.getFarmIdentifier()); // Check farm ID mapping
         assertThat(response.getPlotName()).isEqualTo("Plot Bravo");
         assertThat(response.getPlotGeometry().getCoordinates().get(0).get(0)).containsExactly(0.0, 0.0);
-        assertThat(response.getCalculatedAreaHectares()).isEqualTo(1.23);
+        assertThat(response.getCalculatedAreaHectares()).isEqualTo(calculatedArea);
         assertThat(response.getLandTenureType()).isEqualTo(LandTenureType.LEASED);
     }
 

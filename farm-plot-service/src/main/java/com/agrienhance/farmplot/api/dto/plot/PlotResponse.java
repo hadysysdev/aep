@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -35,7 +36,7 @@ public class PlotResponse {
     private PolygonGeometryDto plotGeometry;
 
     @Schema(description = "Calculated area of the plot in hectares.", example = "1.25")
-    private Double calculatedAreaHectares;
+    private BigDecimal calculatedAreaHectares;
 
     @Schema(description = "Type of land tenure for the plot.")
     private LandTenureType landTenureType;

@@ -43,11 +43,12 @@ class FarmApplicationServiceImplTest {
     private Farm savedFarmEntity;
     private FarmResponse farmResponseFromMapper;
     private GeometryFactory geometryFactory;
+    private UUID tenantId;
 
     @BeforeEach
     void setUp() {
         geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
-
+        tenantId = UUID.randomUUID(); // Simulate a tenant ID for the tests
         // 1. Prepare input DTO
         PointGeometryDto pointDto = PointGeometryDto.builder()
                 .type("Point")
@@ -57,7 +58,6 @@ class FarmApplicationServiceImplTest {
                 .farmName("Test Service Farm")
                 .ownerReferenceId(UUID.randomUUID())
                 .countryCode("SV")
-                .tenantId(UUID.randomUUID())
                 .generalLocationCoordinates(pointDto)
                 .build();
 
@@ -67,7 +67,7 @@ class FarmApplicationServiceImplTest {
         farmEntityFromMapper.setFarmName(createFarmRequest.getFarmName());
         farmEntityFromMapper.setOwnerReferenceId(createFarmRequest.getOwnerReferenceId());
         farmEntityFromMapper.setCountryCode(createFarmRequest.getCountryCode());
-        farmEntityFromMapper.setTenantId(createFarmRequest.getTenantId());
+        farmEntityFromMapper.setTenantId(tenantId);
         farmEntityFromMapper.setGeneralLocationCoordinates(farmPoint);
         // JPA/Lifecycle callbacks would set ID, timestamps, version upon save
 
@@ -106,13 +106,13 @@ class FarmApplicationServiceImplTest {
         when(farmMapper.farmToFarmResponse(savedFarmEntity)).thenReturn(farmResponseFromMapper);
 
         // When (Act)
-        FarmResponse actualResponse = farmApplicationService.createFarm(createFarmRequest);
+        FarmResponse actualResponse = farmApplicationService.createFarm(createFarmRequest, tenantId);
 
         // Then (Assert)
         assertThat(actualResponse).isNotNull();
         assertThat(actualResponse.getFarmIdentifier()).isEqualTo(savedFarmEntity.getFarmIdentifier());
         assertThat(actualResponse.getFarmName()).isEqualTo(createFarmRequest.getFarmName());
-        assertThat(actualResponse.getTenantId()).isEqualTo(createFarmRequest.getTenantId());
+        assertThat(actualResponse.getTenantId()).isEqualTo(tenantId);
 
         // Verify interactions
         verify(farmMapper).createRequestToFarm(createFarmRequest);

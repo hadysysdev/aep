@@ -27,8 +27,6 @@ public class FarmRepositoryIT extends AbstractIntegrationTest { // Extends the b
     @Autowired
     private FarmRepository farmRepository;
 
-    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); // WGS84
-
     @AfterEach
     void tearDown() {
         // Clean up data after each test to ensure test independence

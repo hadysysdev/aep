@@ -97,6 +97,12 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
         if (!farmRepository.existsById(farmIdentifier)) { // Simplified check, proper tenant check needed
             throw new ResourceNotFoundException("Farm", farmIdentifier.toString());
         }
+
+        if (!farmRepository.existsByFarmIdentifierAndTenantId(farmIdentifier, tenantId)) {
+            throw new ResourceNotFoundException("Farm", farmIdentifier.toString() + " with tenant " + tenantId);
+
+        }
+
         Page<Plot> plotPage = plotRepository.findAllByFarm_FarmIdentifierAndTenantId(farmIdentifier, tenantId,
                 pageable);
         return plotPage.map(plotMapper::plotToPlotResponse);

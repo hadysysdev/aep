@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 // import org.springframework.security.access.prepost.PreAuthorize; // For authorization later
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 import com.agrienhance.farmplot.api.dto.poi.CreatePointOfInterestRequest;
@@ -32,6 +33,8 @@ import com.agrienhance.farmplot.application.service.PointOfInterestApplicationSe
 import com.agrienhance.farmplot.domain.enums.ParentEntityType; // Import
 import org.springframework.data.domain.Page; // If using paginated list
 import org.springframework.data.domain.Pageable; // If using paginated list
+
+import java.net.URI;
 import java.util.List; // If using non-paginated list
 
 @RestController
@@ -44,10 +47,13 @@ public class FarmController {
         private final FarmApplicationService farmApplicationService;
         private final PointOfInterestApplicationService poiApplicationService; // Add this
 
-        // @Autowired
-        // public FarmController(FarmApplicationService farmApplicationService) {
-        // this.farmApplicationService = farmApplicationService;
-        // }
+        private UUID getAuthenticatedTenantId() {
+                // TODO: Replace with actual logic to extract tenantId from Spring Security
+                // context
+                // For now, we return a hardcoded UUID for testing purposes.
+                // This MUST be replaced before going to production.
+                return UUID.fromString("a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5");
+        }
 
         @Operation(summary = "Register a new farm")
         @ApiResponses(value = {
@@ -55,20 +61,20 @@ public class FarmController {
                         @ApiResponse(responseCode = "400", description = "Invalid input data")
         })
         @PostMapping
-        // @PreAuthorize("hasAuthority('CREATE_FARM')") // Example for security
-        public ResponseEntity<FarmResponse> registerFarm(
-                        @Valid @RequestBody CreateFarmRequest createFarmRequest) {
-                // FarmResponse createdFarm =
-                // farmApplicationService.createFarm(createFarmRequest);
-                // For stub:
-                FarmResponse createdFarm = FarmResponse.builder()
-                                .farmIdentifier(UUID.randomUUID()) // Mock ID
-                                .farmName(createFarmRequest.getFarmName())
-                                .ownerReferenceId(createFarmRequest.getOwnerReferenceId())
-                                .tenantId(createFarmRequest.getTenantId())
-                                // ... other fields ...
-                                .build();
-                return new ResponseEntity<>(createdFarm, HttpStatus.CREATED);
+        public ResponseEntity<FarmResponse> registerFarm(@Valid @RequestBody CreateFarmRequest createFarmRequest) {
+                // In a real app, we'd also validate that createFarmRequest.getTenantId()
+                // matches the authenticated user's tenant
+                FarmResponse createdFarm = farmApplicationService.createFarm(createFarmRequest,
+                                getAuthenticatedTenantId());
+
+                // Build the location URI for the newly created resource
+                URI location = ServletUriComponentsBuilder
+                                .fromCurrentRequest()
+                                .path("/{farmIdentifier}")
+                                .buildAndExpand(createdFarm.getFarmIdentifier())
+                                .toUri();
+
+                return ResponseEntity.created(location).body(createdFarm);
         }
 
         @Operation(summary = "Get farm details by its identifier")
@@ -77,18 +83,11 @@ public class FarmController {
                         @ApiResponse(responseCode = "404", description = "Farm not found")
         })
         @GetMapping("/{farmIdentifier}")
-        // @PreAuthorize("hasAuthority('VIEW_FARM')")
         public ResponseEntity<FarmResponse> getFarmById(
                         @Parameter(description = "UUID of the farm to retrieve") @PathVariable UUID farmIdentifier) {
-                // FarmResponse farm = farmApplicationService.getFarmById(farmIdentifier,
-                // tenantId); // tenantId from security context
-                // For stub:
-                if (farmIdentifier.equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) { // Mock a
-                                                                                                      // non-found case
-                        return ResponseEntity.notFound().build();
-                }
-                FarmResponse farm = FarmResponse.builder().farmIdentifier(farmIdentifier).farmName("Mocked Farm")
-                                .build();
+                // Use our temporary method to get the tenantId
+                UUID tenantId = getAuthenticatedTenantId();
+                FarmResponse farm = farmApplicationService.getFarmById(farmIdentifier, tenantId);
                 return ResponseEntity.ok(farm);
         }
 
@@ -97,16 +96,10 @@ public class FarmController {
                         @ApiResponse(responseCode = "200", description = "List of farms retrieved")
         })
         @GetMapping
-        // @PreAuthorize("hasAuthority('LIST_FARMS')")
         public ResponseEntity<Page<FarmResponse>> listFarms(
-                        // We would get tenantId from security context in a real app
-                        // For now, we can imagine it's implicitly handled or passed if needed for
-                        // service layer
                         @Parameter(description = "Pagination and sorting parameters") @PageableDefault(size = 20, sort = "farmName") Pageable pageable) {
-                // Page<FarmResponse> farms = farmApplicationService.listFarmsByTenant(tenantId,
-                // pageable);
-                // For stub:
-                Page<FarmResponse> farms = Page.empty(pageable); // Return empty page for stub
+                UUID tenantId = getAuthenticatedTenantId();
+                Page<FarmResponse> farms = farmApplicationService.listFarmsByTenant(tenantId, pageable);
                 return ResponseEntity.ok(farms);
         }
 
@@ -117,15 +110,12 @@ public class FarmController {
                         @ApiResponse(responseCode = "404", description = "Farm not found")
         })
         @PutMapping("/{farmIdentifier}")
-        // @PreAuthorize("hasAuthority('UPDATE_FARM')")
         public ResponseEntity<FarmResponse> updateFarm(
                         @Parameter(description = "UUID of the farm to update") @PathVariable UUID farmIdentifier,
                         @Valid @RequestBody UpdateFarmRequest updateFarmRequest) {
-                // FarmResponse updatedFarm = farmApplicationService.updateFarm(farmIdentifier,
-                // updateFarmRequest, tenantId);
-                // For stub:
-                FarmResponse updatedFarm = FarmResponse.builder().farmIdentifier(farmIdentifier)
-                                .farmName(updateFarmRequest.getFarmName()).build();
+                UUID tenantId = getAuthenticatedTenantId();
+                FarmResponse updatedFarm = farmApplicationService.updateFarm(farmIdentifier, updateFarmRequest,
+                                tenantId);
                 return ResponseEntity.ok(updatedFarm);
         }
 
@@ -135,11 +125,10 @@ public class FarmController {
                         @ApiResponse(responseCode = "404", description = "Farm not found")
         })
         @DeleteMapping("/{farmIdentifier}")
-        // @PreAuthorize("hasAuthority('DELETE_FARM')")
         public ResponseEntity<Void> deleteFarm(
                         @Parameter(description = "UUID of the farm to delete") @PathVariable UUID farmIdentifier) {
-                // farmApplicationService.deleteFarm(farmIdentifier, tenantId);
-                // For stub:
+                UUID tenantId = getAuthenticatedTenantId();
+                farmApplicationService.deleteFarm(farmIdentifier, tenantId);
                 return ResponseEntity.noContent().build();
         }
 
@@ -154,8 +143,7 @@ public class FarmController {
                         @Parameter(description = "UUID of the farm") @PathVariable UUID farmIdentifier,
                         @Valid @RequestBody CreatePointOfInterestRequest request) {
                 // UUID tenantId = ... from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder for tenantId
-                // For createPoi, the request DTO already contains tenantId
+                UUID tenantId = getAuthenticatedTenantId();
                 PointOfInterestResponse createdPoi = poiApplicationService.createPoi(
                                 farmIdentifier,
                                 ParentEntityType.FARM,
@@ -174,7 +162,7 @@ public class FarmController {
                                                                            // Pageable
                         @Parameter(description = "UUID of the farm") @PathVariable UUID farmIdentifier) {
                 // UUID tenantId = ... from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder
+                UUID tenantId = getAuthenticatedTenantId();
                 // If using Pageable: Page<PointOfInterestResponse> pois =
                 // poiApplicationService.listPoisByParentPaginated(farmIdentifier,
                 // ParentEntityType.FARM, tenantId, pageable);

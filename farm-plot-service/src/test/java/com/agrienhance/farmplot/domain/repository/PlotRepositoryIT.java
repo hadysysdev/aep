@@ -39,7 +39,6 @@ public class PlotRepositoryIT extends AbstractIntegrationTest {
     @Autowired
     private FarmRepository farmRepository; // To create a parent Farm
 
-    private final GeometryFactory geometryFactory = new GeometryFactory(new PrecisionModel(), 4326); // WGS84
     private Farm testFarm;
     private UUID tenantId;
 
@@ -52,13 +51,6 @@ public class PlotRepositoryIT extends AbstractIntegrationTest {
         entityManager.clear(); // Detach all entities
 
         tenantId = UUID.randomUUID();
-        // testFarm = Farm.builder()
-        // .farmName("Integration Test Farm for Plots")
-        // .ownerReferenceId(UUID.randomUUID())
-        // .countryCode("IT") // Integration Test country
-        // .tenantId(tenantId)
-        // .build();
-        // farmRepository.save(testFarm); // Save the farm so plots can reference it
 
         // Create a NEW testFarm instance for each test method run
         Farm freshTestFarm = Farm.builder()
@@ -76,16 +68,6 @@ public class PlotRepositoryIT extends AbstractIntegrationTest {
     // plotRepository.deleteAllInBatch(); // More efficient delete
     // farmRepository.deleteAllInBatch(); // More efficient delete
     // }
-
-    private Polygon createSimpleSquarePolygon(double sideLength, double originX, double originY) {
-        return geometryFactory.createPolygon(new Coordinate[] {
-                new Coordinate(originX, originY),
-                new Coordinate(originX + sideLength, originY),
-                new Coordinate(originX + sideLength, originY + sideLength),
-                new Coordinate(originX, originY + sideLength),
-                new Coordinate(originX, originY) // Close the ring
-        });
-    }
 
     // Helper method to create a plot with a specific geometry and save it
     private Plot createAndSavePlotForFarm(String name, Polygon geometry, Farm farm) {
@@ -200,41 +182,6 @@ public class PlotRepositoryIT extends AbstractIntegrationTest {
             plotRepository.saveAndFlush(plot); // saveAndFlush to trigger constraints
         });
     }
-
-    // TODO: Add a test for findPlotsIntersecting if you have it in your
-    // PlotRepository
-    // @Test
-    // void findPlotsIntersecting_shouldReturnCorrectPlots() {
-    // // Given
-    // Plot plot1 =
-    // plotRepository.save(Plot.builder().farm(testFarm).plotName("Plot1")
-    // .plotGeometry(createSimpleSquarePolygon(0.01, 10.0, 10.0)) // 10,10 to
-    // 10.01,10.01
-    // .tenantId(tenantId).build());
-    // Plot plot2 =
-    // plotRepository.save(Plot.builder().farm(testFarm).plotName("Plot2")
-    // .plotGeometry(createSimpleSquarePolygon(0.01, 10.005, 10.005)) // Overlaps
-    // plot1: 10.005,10.005 to 10.015,10.015
-    // .tenantId(tenantId).build());
-    // Plot plot3 =
-    // plotRepository.save(Plot.builder().farm(testFarm).plotName("Plot3")
-    // .plotGeometry(createSimpleSquarePolygon(0.01, 11.0, 11.0)) // No overlap
-    // .tenantId(tenantId).build());
-    // entityManager.flush();
-    // entityManager.clear();
-
-    // Polygon queryPolygon = createSimpleSquarePolygon(0.008, 10.001, 10.001); //
-    // Polygon that should intersect plot1 and plot2
-
-    // // When
-    // List<Plot> intersectingPlots = plotRepository.findPlotsIntersecting(tenantId,
-    // queryPolygon);
-
-    // // Then
-    // assertThat(intersectingPlots).hasSize(2)
-    // .extracting(Plot::getPlotName)
-    // .containsExactlyInAnyOrder("Plot1", "Plot2");
-    // }
 
     @Test
     void findPlotsIntersecting_shouldReturnCorrectlyIntersectingPlots() {

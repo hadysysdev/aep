@@ -30,8 +30,9 @@ public class FarmApplicationServiceImpl implements FarmApplicationService {
 
     @Override
     @Transactional
-    public FarmResponse createFarm(CreateFarmRequest request) {
+    public FarmResponse createFarm(CreateFarmRequest request, UUID tenantId) {
         Farm farm = farmMapper.createRequestToFarm(request);
+        farm.setTenantId(tenantId);
         // Note: tenantId is mapped directly by MapStruct if field names are the same.
         // Timestamps and version will be handled by @PrePersist, @PreUpdate in Farm
         // entity
@@ -62,7 +63,13 @@ public class FarmApplicationServiceImpl implements FarmApplicationService {
         Farm farm = farmRepository.findByFarmIdentifierAndTenantId(farmIdentifier, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm", farmIdentifier.toString()));
 
+        // Mapper applies non-null updates from the request
         farmMapper.updateFarmFromRequest(request, farm); // Apply updates
+
+        // --- Explicit handling for fields that CAN be set to null ---
+        if (request.getNotes() == null) {
+            farm.setNotes(null);
+        }
 
         Farm updatedFarm = farmRepository.save(farm);
         return farmMapper.farmToFarmResponse(updatedFarm);

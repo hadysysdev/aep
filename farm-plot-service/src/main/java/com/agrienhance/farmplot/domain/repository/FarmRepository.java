@@ -27,6 +27,8 @@ public interface FarmRepository extends JpaRepository<Farm, UUID> {
 
     List<Farm> findAllByTenantIdAndCountryCode(UUID tenantId, String countryCode, Pageable pageable);
 
+    boolean existsByFarmIdentifierAndTenantId(UUID farmIdentifier, UUID tenantId);
+
     // Example of a more complex query using @Query if needed
     // This is just illustrative; for simple cases, method derivation is preferred.
     @Query("SELECT f FROM Farm f WHERE f.tenantId = :tenantId AND LOWER(f.farmName) LIKE LOWER(concat('%', :nameQuery, '%'))")

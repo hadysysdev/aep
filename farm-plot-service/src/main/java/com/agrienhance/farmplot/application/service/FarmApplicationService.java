@@ -16,7 +16,7 @@ public interface FarmApplicationService {
      * @param createFarmRequest DTO containing data for the new farm.
      * @return FarmResponse DTO of the created farm.
      */
-    FarmResponse createFarm(CreateFarmRequest createFarmRequest);
+    FarmResponse createFarm(CreateFarmRequest createFarmRequest, UUID tenantId);
 
     /**
      * Retrieves a specific farm by its identifier and tenant ID.

@@ -27,6 +27,10 @@ public interface PlotRepository extends JpaRepository<Plot, UUID> {
 
     List<Plot> findAllByCultivatorReferenceIdAndTenantId(UUID cultivatorReferenceId, UUID tenantId);
 
+    boolean existsByPlotIdentifierAndTenantId(UUID plotIdentifier, UUID tenantId);
+
+    boolean existsByFarm_FarmIdentifierAndTenantId(UUID farmIdentifier, UUID tenantId);
+
     // Example of a geospatial query using @Query with native SQL or HQL with
     // spatial functions.
     // This finds plots whose geometry intersects with a given bounding box

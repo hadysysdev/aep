@@ -46,7 +46,10 @@ public class CreateFarmRequest {
     @Schema(description = "Optional descriptive notes about the farm.", example = "Fertile land, good water access.")
     private String notes;
 
-    @NotNull(message = "Tenant ID cannot be null.")
-    @Schema(description = "UUID of the tenant (cooperative/agribusiness) this farm belongs to.", example = "f0e1d2c3-b4a5-6789-0123-456789abcdef", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID tenantId;
+    // @NotNull(message = "Tenant ID cannot be null.")
+    // Would come from security context
+    // @Schema(description = "UUID of the tenant (cooperative/agribusiness) this
+    // farm belongs to.", example = "f0e1d2c3-b4a5-6789-0123-456789abcdef",
+    // requiredMode = Schema.RequiredMode.REQUIRED)
+    // private UUID tenantId;
 }

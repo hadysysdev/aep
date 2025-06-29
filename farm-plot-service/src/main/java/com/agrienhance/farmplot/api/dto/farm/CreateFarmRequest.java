@@ -46,6 +46,7 @@ public class CreateFarmRequest {
     @Schema(description = "Optional descriptive notes about the farm.", example = "Fertile land, good water access.")
     private String notes;
 
+    // Will come from security context
     // @NotNull(message = "Tenant ID cannot be null.")
     // Would come from security context
     // @Schema(description = "UUID of the tenant (cooperative/agribusiness) this

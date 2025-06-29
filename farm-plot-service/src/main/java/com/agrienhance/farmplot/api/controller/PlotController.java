@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 // import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -35,6 +36,8 @@ import com.agrienhance.farmplot.application.service.PointOfInterestApplicationSe
 import com.agrienhance.farmplot.domain.enums.ParentEntityType; // Import
 import org.springframework.data.domain.Page; // If using paginated list
 import org.springframework.data.domain.Pageable; // If using paginated list
+
+import java.net.URI;
 import java.util.List; // If using non-paginated list
 
 @RestController
@@ -47,6 +50,14 @@ public class PlotController {
         private final PlotApplicationService plotApplicationService;
         private final PointOfInterestApplicationService poiApplicationService; // Add this
 
+        private UUID getAuthenticatedTenantId() {
+                // TODO: Replace with actual logic to extract tenantId from Spring Security
+                // context
+                // For now, we return a hardcoded UUID for testing purposes.
+                // This MUST be replaced before going to production.
+                return UUID.fromString("a1a1a1a1-b2b2-c3c3-d4d4-e5e5e5e5e5e5");
+        }
+
         @Operation(summary = "Define a new plot for a farm")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "201", description = "Plot created successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = PlotResponse.class))),
@@ -56,17 +67,15 @@ public class PlotController {
         // @PreAuthorize("hasAuthority('CREATE_PLOT')")
         public ResponseEntity<PlotResponse> definePlot(
                         @Valid @RequestBody CreatePlotRequest createPlotRequest) {
-                // PlotResponse createdPlot =
-                // plotApplicationService.createPlot(createPlotRequest);
-                // For stub:
-                PlotResponse createdPlot = PlotResponse.builder()
-                                .plotIdentifier(UUID.randomUUID()) // Mock ID
-                                .plotName(createPlotRequest.getPlotName())
-                                .farmIdentifier(createPlotRequest.getFarmIdentifier())
-                                .tenantId(createPlotRequest.getTenantId())
-                                // ... other fields ...
-                                .build();
-                return new ResponseEntity<>(createdPlot, HttpStatus.CREATED);
+
+                PlotResponse createdPlot = plotApplicationService.createPlot(createPlotRequest,
+                                getAuthenticatedTenantId());
+                URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                                .path("/{plotIdentifier}")
+                                .buildAndExpand(createdPlot.getPlotIdentifier())
+                                .toUri();
+                return ResponseEntity.created(location).body(createdPlot);
+
         }
 
         @Operation(summary = "Get plot details by its identifier")
@@ -78,11 +87,7 @@ public class PlotController {
         // @PreAuthorize("hasAuthority('VIEW_PLOT')")
         public ResponseEntity<PlotResponse> getPlotById(
                         @Parameter(description = "UUID of the plot to retrieve") @PathVariable UUID plotIdentifier) {
-                // PlotResponse plot = plotApplicationService.getPlotById(plotIdentifier,
-                // tenantId); // tenantId from security context
-                // For stub:
-                PlotResponse plot = PlotResponse.builder().plotIdentifier(plotIdentifier).plotName("Mocked Plot")
-                                .build();
+                PlotResponse plot = plotApplicationService.getPlotById(plotIdentifier, getAuthenticatedTenantId());
                 return ResponseEntity.ok(plot);
         }
 
@@ -96,16 +101,15 @@ public class PlotController {
                         @Parameter(description = "Optional UUID of the farm to filter plots by") @RequestParam(required = false) UUID farmIdentifier,
                         // tenantId would come from security context
                         @Parameter(description = "Pagination and sorting parameters") @PageableDefault(size = 20, sort = "plotName") Pageable pageable) {
-                // Page<PlotResponse> plots;
-                // if (farmIdentifier != null) {
-                // plots = plotApplicationService.listPlotsByFarm(farmIdentifier, tenantId,
-                // pageable);
-                // } else {
-                // plots = plotApplicationService.listAllPlotsForTenant(tenantId, pageable);
-                // }
-                // For stub:
                 Page<PlotResponse> plots = Page.empty(pageable);
+                if (farmIdentifier != null) {
+                        plots = plotApplicationService.listPlotsByFarm(farmIdentifier, getAuthenticatedTenantId(),
+                                        pageable);
+                } else {
+                        plots = plotApplicationService.listPlots(getAuthenticatedTenantId(), pageable);
+                }
                 return ResponseEntity.ok(plots);
+
         }
 
         @Operation(summary = "Update an existing plot")
@@ -119,11 +123,8 @@ public class PlotController {
         public ResponseEntity<PlotResponse> updatePlot(
                         @Parameter(description = "UUID of the plot to update") @PathVariable UUID plotIdentifier,
                         @Valid @RequestBody UpdatePlotRequest updatePlotRequest) {
-                // PlotResponse updatedPlot = plotApplicationService.updatePlot(plotIdentifier,
-                // updatePlotRequest, tenantId);
-                // For stub:
-                PlotResponse updatedPlot = PlotResponse.builder().plotIdentifier(plotIdentifier)
-                                .plotName(updatePlotRequest.getPlotName()).build();
+                PlotResponse updatedPlot = plotApplicationService.updatePlot(plotIdentifier, updatePlotRequest,
+                                getAuthenticatedTenantId());
                 return ResponseEntity.ok(updatedPlot);
         }
 
@@ -136,8 +137,7 @@ public class PlotController {
         // @PreAuthorize("hasAuthority('DELETE_PLOT')")
         public ResponseEntity<Void> deletePlot(
                         @Parameter(description = "UUID of the plot to delete") @PathVariable UUID plotIdentifier) {
-                // plotApplicationService.deletePlot(plotIdentifier, tenantId);
-                // For stub:
+                plotApplicationService.deletePlot(plotIdentifier, getAuthenticatedTenantId());
                 return ResponseEntity.noContent().build();
         }
 
@@ -150,10 +150,11 @@ public class PlotController {
         // @PreAuthorize("hasAuthority('MANAGE_TENURE')")
         public ResponseEntity<LandTenureResponse> getLandTenureForPlot(
                         @Parameter(description = "UUID of the plot") @PathVariable UUID plotIdentifier) {
-                // UUID tenantId = ... get from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder for tenantId
-                LandTenureResponse response = plotApplicationService.getLandTenureForPlot(plotIdentifier, tenantId);
+
+                LandTenureResponse response = plotApplicationService.getLandTenureForPlot(plotIdentifier,
+                                getAuthenticatedTenantId());
                 return ResponseEntity.ok(response);
+
         }
 
         @Operation(summary = "Create or update land tenure information for a specific plot")
@@ -168,13 +169,8 @@ public class PlotController {
         public ResponseEntity<LandTenureResponse> createOrUpdateLandTenure(
                         @Parameter(description = "UUID of the plot") @PathVariable UUID plotIdentifier,
                         @Valid @RequestBody CreateOrUpdateLandTenureRequest request) {
-                // UUID tenantId = ... get from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder for tenantId
-                // Determine if it's a create or update to return 201 or 200, or just always
-                // return 200 for PUT.
-                // For simplicity, always 200 from service.
                 LandTenureResponse response = plotApplicationService.createOrUpdateLandTenureForPlot(plotIdentifier,
-                                request, tenantId);
+                                request, getAuthenticatedTenantId());
                 return ResponseEntity.ok(response); // Could also be CREATED if it was definitely a new resource
         }
 
@@ -187,9 +183,7 @@ public class PlotController {
         // @PreAuthorize("hasAuthority('MANAGE_TENURE')")
         public ResponseEntity<Void> deleteLandTenure(
                         @Parameter(description = "UUID of the plot") @PathVariable UUID plotIdentifier) {
-                // UUID tenantId = ... get from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder for tenantId
-                plotApplicationService.deleteLandTenureForPlot(plotIdentifier, tenantId);
+                plotApplicationService.deleteLandTenureForPlot(plotIdentifier, getAuthenticatedTenantId());
                 return ResponseEntity.noContent().build();
         }
 
@@ -199,11 +193,10 @@ public class PlotController {
         public ResponseEntity<PointOfInterestResponse> createPlotPoi(
                         @Parameter(description = "UUID of the plot") @PathVariable UUID plotIdentifier,
                         @Valid @RequestBody CreatePointOfInterestRequest request) {
-                UUID tenantId = UUID.randomUUID(); // Placeholder for tenantId
                 PointOfInterestResponse createdPoi = poiApplicationService.createPoi(
                                 plotIdentifier,
                                 ParentEntityType.PLOT,
-                                tenantId,
+                                getAuthenticatedTenantId(),
                                 request);
                 return new ResponseEntity<>(createdPoi, HttpStatus.CREATED);
         }
@@ -214,10 +207,8 @@ public class PlotController {
         public ResponseEntity<List<PointOfInterestResponse>> listPlotPois( // Or Page<PointOfInterestResponse> with
                                                                            // Pageable
                         @Parameter(description = "UUID of the plot") @PathVariable UUID plotIdentifier) {
-                // UUID tenantId = ... from security context ...
-                UUID tenantId = UUID.randomUUID(); // Placeholder
                 List<PointOfInterestResponse> pois = poiApplicationService.listPoisByParent(plotIdentifier,
-                                ParentEntityType.PLOT, tenantId);
+                                ParentEntityType.PLOT, getAuthenticatedTenantId());
                 return ResponseEntity.ok(pois);
         }
 }

@@ -12,6 +12,9 @@ import com.agrienhance.farmplot.domain.enums.ParentEntityType;
 import com.agrienhance.farmplot.domain.repository.FarmRepository;
 import com.agrienhance.farmplot.domain.repository.PlotRepository;
 import com.agrienhance.farmplot.domain.repository.PointOfInterestRepository;
+
+import lombok.AllArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,23 +26,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class PointOfInterestApplicationServiceImpl implements PointOfInterestApplicationService {
 
     private final PointOfInterestRepository poiRepository;
     private final FarmRepository farmRepository;
     private final PlotRepository plotRepository;
     private final PointOfInterestMapper poiMapper;
-
-    @Autowired
-    public PointOfInterestApplicationServiceImpl(PointOfInterestRepository poiRepository,
-            FarmRepository farmRepository,
-            PlotRepository plotRepository,
-            PointOfInterestMapper poiMapper) {
-        this.poiRepository = poiRepository;
-        this.farmRepository = farmRepository;
-        this.plotRepository = plotRepository;
-        this.poiMapper = poiMapper;
-    }
 
     @Override
     @Transactional
@@ -54,8 +47,6 @@ public class PointOfInterestApplicationServiceImpl implements PointOfInterestApp
         poi.setParentEntityIdentifier(parentEntityIdentifier);
         poi.setParentEntityType(parentEntityType);
         poi.setTenantId(tenantId);
-        // TenantId is already mapped by MapStruct from the request for POI.
-        // ParentEntityType and ParentEntityIdentifier are also mapped.
 
         PointOfInterest savedPoi = poiRepository.save(poi);
         return poiMapper.poiToPoiResponse(savedPoi);
@@ -100,9 +91,6 @@ public class PointOfInterestApplicationServiceImpl implements PointOfInterestApp
         PointOfInterest poi = poiRepository.findByPoiIdentifierAndTenantId(poiIdentifier, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("PointOfInterest", poiIdentifier.toString()));
 
-        // ParentEntityIdentifier, ParentEntityType, and TenantId are not updatable via
-        // this request
-        // as per our UpdatePointOfInterestRequest DTO and mapper configuration.
         poiMapper.updatePoiFromRequest(request, poi);
 
         PointOfInterest updatedPoi = poiRepository.save(poi);

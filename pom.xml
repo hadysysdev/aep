@@ -21,10 +21,13 @@
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <org.projectlombok.version>1.18.38</org.projectlombok.version>
         <org.testcontainers.version>1.21.1</org.testcontainers.version>
+        <keycloak.version>25.0.2</keycloak.version>
+        <org.testcontainers.keycloak.version>3.4.0</org.testcontainers.keycloak.version>
     </properties>
 
     <modules>
         <module>farm-plot-service</module>
+        <module>identity-access-service</module>
     </modules>
 
     <dependencyManagement>
@@ -92,6 +95,20 @@
                 <groupId>org.testcontainers</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${org.testcontainers.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.dasniko</groupId>
+                <artifactId>testcontainers-keycloak</artifactId>
+                <version>${org.testcontainers.keycloak.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Security-->
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-admin-client</artifactId>
+                <version>${keycloak.version}</version>
             </dependency>
 
         </dependencies>

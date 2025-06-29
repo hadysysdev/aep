@@ -51,7 +51,10 @@ public class CreatePlotRequest {
     // = "2026-12-31")
     // private String leaseEndDate;
 
-    @NotNull(message = "Tenant ID cannot be null.") // Should match the farm's tenantId, usually validated in service
-    @Schema(description = "UUID of the tenant this plot belongs to.", requiredMode = Schema.RequiredMode.REQUIRED)
-    private UUID tenantId;
+    // Will come from security context
+    // @NotNull(message = "Tenant ID cannot be null.") // Should match the farm's
+    // tenantId, usually validated in service
+    // @Schema(description = "UUID of the tenant this plot belongs to.",
+    // requiredMode = Schema.RequiredMode.REQUIRED)
+    // private UUID tenantId;
 }

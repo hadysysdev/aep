@@ -12,9 +12,11 @@ import java.util.UUID;
 
 public interface PlotApplicationService {
 
-    PlotResponse createPlot(CreatePlotRequest createPlotRequest);
+    PlotResponse createPlot(CreatePlotRequest createPlotRequest, UUID tenantId);
 
     PlotResponse getPlotById(UUID plotIdentifier, UUID tenantId);
+
+    Page<PlotResponse> listPlots(UUID tenantId, Pageable pageable);
 
     Page<PlotResponse> listPlotsByFarm(UUID farmIdentifier, UUID tenantId, Pageable pageable);
 

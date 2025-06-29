@@ -16,6 +16,7 @@ import com.agrienhance.farmplot.domain.repository.FarmRepository;
 import com.agrienhance.farmplot.domain.repository.LandTenureRepository;
 import com.agrienhance.farmplot.domain.repository.PlotRepository;
 
+import jakarta.persistence.EntityManager;
 import lombok.AllArgsConstructor;
 
 import org.locationtech.jts.geom.Polygon;
@@ -37,26 +38,16 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
 
     private final LandTenureRepository landTenureRepository;
     private final LandTenureMapper landTenureMapper;
-
-    // We might also need a service to calculate area from geometry if not done by
-    // database
-    // private final GeospatialCalculationService geospatialService;
-
-    // public PlotApplicationServiceImpl(PlotRepository plotRepository,
-    // FarmRepository farmRepository,
-    // PlotMapper plotMapper) {
-    // this.plotRepository = plotRepository;
-    // this.farmRepository = farmRepository;
-    // this.plotMapper = plotMapper;
-    // }
+    private final EntityManager entityManager;
 
     @Override
     @Transactional
-    public PlotResponse createPlot(CreatePlotRequest request) {
+    public PlotResponse createPlot(CreatePlotRequest request, UUID tenantId) {
         // 1. Fetch the associated Farm to ensure it exists under the given tenant
-        Farm farm = farmRepository.findByFarmIdentifierAndTenantId(request.getFarmIdentifier(), request.getTenantId())
+        Farm farm = farmRepository.findByFarmIdentifierAndTenantId(request.getFarmIdentifier(),
+                tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Farm",
-                        request.getFarmIdentifier().toString() + " with tenant " + request.getTenantId()));
+                        request.getFarmIdentifier().toString() + " with tenant " + tenantId));
 
         // 2. Map DTO to Entity (excluding farm for now as per mapper config)
         Plot plot = plotMapper.createRequestToPlot(request);
@@ -65,19 +56,8 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
         plot.setFarm(farm);
         plot.setTenantId(farm.getTenantId()); // Inherit tenantId from the farm
 
-        // 4. (Optional) Calculate area if plotGeometry is present
-        if (plot.getPlotGeometry() != null) {
-            // Area calculation: JTS area is in square degrees for WGS84.
-            // Conversion to hectares is non-trivial and depends on latitude or requires an
-            // equal-area projection.
-            // For simplicity, we'll store a placeholder or use a dedicated geospatial
-            // library/PostGIS function.
-            // Let's assume it might be calculated by a @PrePersist or a DB trigger for now,
-            // or a dedicated service.
-            // plot.setCalculatedAreaHectares(calculateAreaInHectares(plot.getPlotGeometry()));
-        }
-
-        Plot savedPlot = plotRepository.save(plot);
+        Plot savedPlot = plotRepository.saveAndFlush(plot);
+        entityManager.refresh(savedPlot);
         return plotMapper.plotToPlotResponse(savedPlot);
     }
 
@@ -87,6 +67,15 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
         Plot plot = plotRepository.findByPlotIdentifierAndTenantId(plotIdentifier, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plot", plotIdentifier.toString()));
         return plotMapper.plotToPlotResponse(plot);
+    }
+
+    @Override
+    public Page<PlotResponse> listPlots(UUID tenantId, Pageable pageable) {
+
+        Page<Plot> plotPage = plotRepository.findAllByTenantId(tenantId,
+                pageable);
+        return plotPage.map(plotMapper::plotToPlotResponse);
+
     }
 
     @Override
@@ -139,27 +128,6 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Plot", plotIdentifier.toString()));
         plotRepository.deleteById(plot.getPlotIdentifier());
     }
-
-    // private Double calculateAreaInHectares(Polygon polygon) {
-    // if (polygon == null || polygon.isEmpty()) {
-    // return null;
-    // }
-    // // IMPORTANT: polygon.getArea() for WGS84 (SRID 4326) returns area in square
-    // degrees.
-    // // Accurate conversion to metric units (like hectares) requires either:
-    // // 1. Reprojecting the geometry to an equal-area projection ON THE DATABASE
-    // (using ST_Transform and ST_Area).
-    // // 2. Using complex formulas that account for latitude (less accurate for
-    // larger areas).
-    // // For this example, we'll acknowledge this complexity. In a real app, this
-    // would be a call
-    // // to a PostGIS function via a native query or a specialized geospatial
-    // library.
-    // // Returning raw square degrees for now, or null.
-    // // return polygon.getArea(); // This is in square degrees! Not hectares.
-    // return null; // Placeholder - actual calculation is complex from raw WGS84
-    // geometry.
-    // }
 
     @Override
     @Transactional(readOnly = true)
@@ -215,6 +183,10 @@ public class PlotApplicationServiceImpl implements PlotApplicationService {
             throw new ResourceNotFoundException("LandTenure for Plot", plotIdentifier.toString());
         }
         landTenureRepository.deleteByPlot_PlotIdentifierAndTenantId(plot.getPlotIdentifier(), tenantId);
+
+        // Clear the denormalized field on the plot and save it
+        plot.setLandTenureType(null);
+        plotRepository.save(plot);
     }
 
 }

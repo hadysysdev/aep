@@ -49,23 +49,6 @@ class PointOfInterestMapperTest {
 
     @Test
     void shouldMapCreateRequestToPoi() {
-        // CreatePointOfInterestRequest request = CreatePointOfInterestRequest.builder()
-        // .poiName("Water Pump")
-        // .poiType(POIType.WATER_SOURCE)
-        // .coordinates(createTestPointDto())
-        // .build();
-
-        // PointOfInterest poi = poiMapper.createRequestToPoi(request);
-
-        // assertThat(poi).isNotNull();
-        // assertThat(poi.getPoiName()).isEqualTo("Water Pump");
-        // assertThat(poi.getPoiType()).isEqualTo(POIType.WATER_SOURCE);
-        // assertThat(poi.getCoordinates().getX()).isEqualTo(5.0);
-        // // assertThat(poi.getTenantId()).isEqualTo(tenantId);
-        // assertThat(poi.getPoiIdentifier()).isNull(); // JPA generated
-
-        // Given: CreatePointOfInterestRequest no longer has parentEntityIdentifier,
-        // parentEntityType, or tenantId
         CreatePointOfInterestRequest request = CreatePointOfInterestRequest.builder()
                 .poiName("Water Pump")
                 .poiType(POIType.WATER_SOURCE)
